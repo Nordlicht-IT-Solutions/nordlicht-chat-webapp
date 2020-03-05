@@ -35,6 +35,7 @@ import {
 } from '@material-ui/core';
 
 import { Menu as MenuIcon, AccountCircle } from '@material-ui/icons';
+import { JoinRoomDialog } from './JoinRoomDialog';
 
 const drawerWidth = 240;
 
@@ -196,28 +197,9 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setAnchorEl(event.currentTarget);
   }, []);
 
-  const handleJoinRoom = useCallback(() => {
-    const roomId = window.prompt('Which room?');
-
-    if (!roomId) {
-      return;
-    }
-
-    client
-      .call('joinRoom', [roomId])
-      .then((res: any) => {
-        console.log('JOIN ROOM', res);
-        setRoomId(roomId);
-      })
-      .catch((err: any) => {
-        console.log('JOIN ROOM', err);
-      })
-      .then(() => {
-        setAnchorEl(null);
-      });
-  }, [client]);
-
   const handleLeaveRoom = useCallback(() => {
+    setAnchorEl(null);
+
     client
       .call('leaveRoom', [roomId])
       .then((res: any) => {
@@ -225,9 +207,6 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
       })
       .catch((err: any) => {
         console.log('LEAVE ROOM', err);
-      })
-      .then(() => {
-        setAnchorEl(null);
       });
   }, [client, roomId]);
 
@@ -236,8 +215,8 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
   }, []);
 
   const handleLogOut = useCallback(() => {
-    onLogOut();
     setAnchorEl(null);
+    onLogOut();
   }, [onLogOut]);
 
   const drawer = (
@@ -250,9 +229,44 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     </List>
   );
 
+  const [showJoinRoomDialog, setShowJoinRoomDialog] = useState(false);
+
+  const handleJoinRoomDialogClose = useCallback(
+    (roomId?: string) => {
+      setShowJoinRoomDialog(false);
+
+      if (!roomId) {
+        return;
+      }
+
+      client
+        .call('joinRoom', [roomId])
+        .then((res: any) => {
+          console.log('JOIN ROOM', res);
+          setRoomId(roomId);
+        })
+        .catch((err: any) => {
+          console.log('JOIN ROOM', err);
+        })
+        .then(() => {
+          setAnchorEl(null);
+        });
+    },
+    [client],
+  );
+
+  const handleJoinRoom = useCallback(() => {
+    setAnchorEl(null);
+    setShowJoinRoomDialog(true);
+  }, []);
+
   return (
     <div className={classes.root}>
       <CssBaseline />
+      <JoinRoomDialog
+        open={showJoinRoomDialog}
+        onClose={handleJoinRoomDialogClose}
+      />
       <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
@@ -366,6 +380,7 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
               value={msg}
               onChange={handleMsgChange}
               size="small"
+              autoFocus
               // multiline
             />
           </form>
