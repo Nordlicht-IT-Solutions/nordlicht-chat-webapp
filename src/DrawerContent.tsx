@@ -14,7 +14,13 @@ import {
   ListItemIcon,
   IconButton,
 } from '@material-ui/core';
-import { AccountCircle, GroupAdd, Search, Group } from '@material-ui/icons';
+import {
+  AccountCircle,
+  GroupAdd,
+  Group,
+  PersonAdd,
+  Person,
+} from '@material-ui/icons';
 import { JoinRoomDialog } from './JoinRoomDialog';
 import { FindUserDialog } from './FindUserDialog';
 
@@ -208,7 +214,7 @@ export const DrawerContent: React.FC<Props> = ({
           <ListSubheader className={classes.subheaderWithButton}>
             <div>Contacts</div>
             <IconButton onClick={handleFindContact} edge="end">
-              <Search />
+              <PersonAdd />
             </IconButton>
           </ListSubheader>
         }
@@ -222,7 +228,7 @@ export const DrawerContent: React.FC<Props> = ({
             // selected={room === activeRoom}
           >
             <ListItemIcon>
-              <Group />
+              <Person />
             </ListItemIcon>
             <ListItemText>{contact}</ListItemText>
           </ListItem>
