@@ -12,6 +12,7 @@ type State = {
   authData: string | undefined;
   roomLog: RoomEvent[];
   rooms: Rooms;
+  contacts: Set<string>;
 };
 
 type InitAction = {
@@ -51,6 +52,16 @@ type UserLeftAction = {
   payload: { user: string; room: string };
 };
 
+type AddContactAction = {
+  type: 'addContact';
+  payload: string;
+};
+
+type RemoveContactAction = {
+  type: 'removeContact';
+  payload: string;
+};
+
 type Action =
   | InitAction
   | StartLoginAction
@@ -59,7 +70,9 @@ type Action =
   | SetAuthDataAction
   | AddRoomEventAction
   | UserJoinedAction
-  | UserLeftAction;
+  | UserLeftAction
+  | AddContactAction
+  | RemoveContactAction;
 
 const initialState: State = {
   loginInProgress: false,
@@ -67,6 +80,7 @@ const initialState: State = {
   authData: undefined,
   roomLog: [],
   rooms: {},
+  contacts: new Set(),
 };
 
 function reducer(state: State, action: Action) {
@@ -123,6 +137,16 @@ function reducer(state: State, action: Action) {
         break;
       }
 
+      case 'addContact': {
+        draft.contacts.add(action.payload);
+        break;
+      }
+
+      case 'removeContact': {
+        draft.contacts.delete(action.payload);
+        break;
+      }
+
       default:
         throw Error('unknown action');
     }
@@ -169,6 +193,7 @@ const App: React.FC = () => {
 
       if (user) {
         dispatch({ type: 'startLogin' });
+
         call('login', [user])
           .then(() => {
             dispatch({ type: 'setAuthData', payload: user });
@@ -199,6 +224,10 @@ const App: React.FC = () => {
           dispatch({ type: 'userLeft', payload: params });
         } else if (method === 'roomEvent') {
           dispatch({ type: 'addRoomEvent', payload: params });
+        } else if (method === 'addContact') {
+          dispatch({ type: 'addContact', payload: params[0] });
+        } else if (method === 'removeContact') {
+          dispatch({ type: 'removeContact', payload: params[0] });
         }
       } else if (id !== undefined && (error || result !== undefined)) {
         const { resolve, reject } = calls.get(id);
@@ -268,6 +297,7 @@ const App: React.FC = () => {
       onLogOut={handleLogOut}
       rooms={state.rooms}
       user={state.authData}
+      contacts={state.contacts}
     />
   ) : state.client ? (
     <Login onLogin={handleLogin} />
