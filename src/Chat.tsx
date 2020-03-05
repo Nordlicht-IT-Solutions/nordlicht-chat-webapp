@@ -219,16 +219,6 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     onLogOut();
   }, [onLogOut]);
 
-  const drawer = (
-    <List dense>
-      {Object.keys(rooms).map(room => (
-        <ListItem key={room} button data-id={room} onClick={handleRoomClick}>
-          <ListItemText>{room}</ListItemText>
-        </ListItem>
-      ))}
-    </List>
-  );
-
   const [showJoinRoomDialog, setShowJoinRoomDialog] = useState(false);
 
   const handleJoinRoomDialogClose = useCallback(
@@ -260,12 +250,32 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setShowJoinRoomDialog(true);
   }, []);
 
+  const joinedRooms = useMemo(() => Object.keys(rooms), [rooms]);
+
+  const drawer = (
+    <List dense>
+      {joinedRooms.map(room => (
+        <ListItem
+          key={room}
+          button
+          data-id={room}
+          onClick={handleRoomClick}
+          selected={room === roomId}
+        >
+          <ListItemText>{room}</ListItemText>
+        </ListItem>
+      ))}
+    </List>
+  );
+
   return (
     <div className={classes.root}>
       <CssBaseline />
       <JoinRoomDialog
+        client={client}
         open={showJoinRoomDialog}
         onClose={handleJoinRoomDialogClose}
+        joinedRooms={joinedRooms}
       />
       <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
@@ -307,7 +317,6 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
             onClose={handleClose}
           >
             <MenuItem onClick={handleLogOut}>Log out</MenuItem>
-            {/* <MenuItem onClick={handleCreateRoom}>Create room</MenuItem> */}
             <MenuItem onClick={handleJoinRoom}>Join room</MenuItem>
             <MenuItem onClick={handleLeaveRoom}>Leave room</MenuItem>
           </Menu>

@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,12 +6,39 @@ import {
   DialogActions,
   Button,
   TextField,
+  DialogContentText,
 } from '@material-ui/core';
 
-type Props = { open: boolean; onClose: (room?: string) => void };
+import Autocomplete from '@material-ui/lab/Autocomplete';
 
-export const JoinRoomDialog: React.FC<Props> = ({ open, onClose }) => {
+type Props = {
+  open: boolean;
+  onClose: (room?: string) => void;
+  client: Client;
+  joinedRooms: string[];
+};
+
+export const JoinRoomDialog: React.FC<Props> = ({
+  open,
+  onClose,
+  client,
+  joinedRooms,
+}) => {
   const [room, setRoom] = useState('');
+
+  const [rooms, setRooms] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      client.call('getRooms', []).then((rooms: string[]) => {
+        const jrs = new Set(joinedRooms);
+
+        setRooms(rooms.filter(room => !jrs.has(room)));
+      });
+
+      setRoom('');
+    }
+  }, [client, open, joinedRooms]);
 
   const handleClose = useCallback(() => {
     onClose();
@@ -20,7 +47,7 @@ export const JoinRoomDialog: React.FC<Props> = ({ open, onClose }) => {
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      onClose(room);
+      onClose(room || undefined);
     },
     [onClose, room],
   );
@@ -30,16 +57,28 @@ export const JoinRoomDialog: React.FC<Props> = ({ open, onClose }) => {
       <form onSubmit={handleSubmit}>
         <DialogTitle>Which room to join?</DialogTitle>
         <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            id="name"
-            label="Room"
-            fullWidth
-            value={room}
-            onChange={e => {
-              setRoom(e.target.value);
+          <DialogContentText>
+            Select existing or create new room.
+          </DialogContentText>
+          <Autocomplete
+            freeSolo
+            autoSelect
+            options={rooms}
+            renderInput={params => (
+              <TextField
+                {...params}
+                label="Room"
+                variant="outlined"
+                margin="dense"
+                fullWidth
+              />
+            )}
+            onChange={(_, value) => {
+              if (value) {
+                setRoom(value);
+              }
             }}
+            multiple={false}
           />
         </DialogContent>
         <DialogActions>
