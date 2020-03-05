@@ -6,7 +6,6 @@ import React, {
   ChangeEvent,
   FormEvent,
   Fragment,
-  MouseEventHandler,
   useMemo,
   useEffect,
   useRef,
@@ -23,19 +22,19 @@ import {
   Toolbar,
   Drawer,
   makeStyles,
-  List,
-  ListItem,
-  ListItemText,
   IconButton,
   Menu,
   MenuItem,
-  Button,
   Hidden,
   useTheme,
 } from '@material-ui/core';
 
-import { Menu as MenuIcon, AccountCircle } from '@material-ui/icons';
-import { JoinRoomDialog } from './JoinRoomDialog';
+import {
+  Menu as MenuIcon,
+  Settings as SettingsIcon,
+  Group,
+} from '@material-ui/icons';
+import { DrawerContent } from './DrawerContent';
 
 const drawerWidth = 240;
 
@@ -184,9 +183,9 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setDrawerOpened(true);
   }, []);
 
-  const handleRoomClick: MouseEventHandler<HTMLElement> = useCallback(e => {
+  const handleRoomSelect = useCallback(room => {
     setDrawerOpened(false);
-    setRoomId(e.currentTarget.dataset.id);
+    setRoomId(room);
   }, []);
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -214,69 +213,22 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setAnchorEl(null);
   }, []);
 
-  const handleLogOut = useCallback(() => {
-    setAnchorEl(null);
-    onLogOut();
-  }, [onLogOut]);
-
-  const [showJoinRoomDialog, setShowJoinRoomDialog] = useState(false);
-
-  const handleJoinRoomDialogClose = useCallback(
-    (roomId?: string) => {
-      setShowJoinRoomDialog(false);
-
-      if (!roomId) {
-        return;
-      }
-
-      client
-        .call('joinRoom', [roomId])
-        .then((res: any) => {
-          console.log('JOIN ROOM', res);
-          setRoomId(roomId);
-        })
-        .catch((err: any) => {
-          console.log('JOIN ROOM', err);
-        })
-        .then(() => {
-          setAnchorEl(null);
-        });
-    },
-    [client],
-  );
-
-  const handleJoinRoom = useCallback(() => {
-    setAnchorEl(null);
-    setShowJoinRoomDialog(true);
-  }, []);
-
   const joinedRooms = useMemo(() => Object.keys(rooms), [rooms]);
 
   const drawer = (
-    <List dense>
-      {joinedRooms.map(room => (
-        <ListItem
-          key={room}
-          button
-          data-id={room}
-          onClick={handleRoomClick}
-          selected={room === roomId}
-        >
-          <ListItemText>{room}</ListItemText>
-        </ListItem>
-      ))}
-    </List>
+    <DrawerContent
+      activeRoom={roomId}
+      joinedRooms={joinedRooms}
+      onRoomSelect={handleRoomSelect}
+      user={user}
+      onLogOut={onLogOut}
+      client={client}
+    />
   );
 
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <JoinRoomDialog
-        client={client}
-        open={showJoinRoomDialog}
-        onClose={handleJoinRoomDialogClose}
-        joinedRooms={joinedRooms}
-      />
       <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
@@ -289,18 +241,25 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" className={classes.title}>
-            {roomId ? roomId : <i>No chat active</i>}
+            {roomId ? (
+              <>
+                <Group fontSize="inherit" /> {roomId}
+              </>
+            ) : (
+              <i>No chat active</i>
+            )}
           </Typography>
-          <Button
-            startIcon={<AccountCircle />}
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenu}
-            color="inherit"
-          >
-            {user}
-          </Button>
+          {roomId && (
+            <IconButton
+              aria-label="account of current user"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={handleMenu}
+              color="inherit"
+            >
+              <SettingsIcon />
+            </IconButton>
+          )}
           <Menu
             id="menu-appbar"
             anchorEl={anchorEl}
@@ -316,8 +275,6 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
             open={open}
             onClose={handleClose}
           >
-            <MenuItem onClick={handleLogOut}>Log out</MenuItem>
-            <MenuItem onClick={handleJoinRoom}>Join room</MenuItem>
             <MenuItem onClick={handleLeaveRoom}>Leave room</MenuItem>
           </Menu>
         </Toolbar>
