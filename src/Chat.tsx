@@ -9,6 +9,8 @@ import React, {
   MouseEventHandler,
   useMemo,
   useEffect,
+  useRef,
+  useLayoutEffect,
 } from 'react';
 
 import {
@@ -28,9 +30,13 @@ import {
   Menu,
   MenuItem,
   Button,
+  Hidden,
+  useTheme,
 } from '@material-ui/core';
 
 import { Menu as MenuIcon, AccountCircle } from '@material-ui/icons';
+
+const drawerWidth = 240;
 
 const useStyles = makeStyles(theme => ({
   '@global': {
@@ -47,8 +53,36 @@ const useStyles = makeStyles(theme => ({
   root: {
     display: 'flex',
     flexGrow: 1,
-    flexDirection: 'column',
     height: '100%',
+  },
+  drawer: {
+    [theme.breakpoints.up('sm')]: {
+      width: drawerWidth,
+      flexShrink: 0,
+    },
+  },
+  appBar: {
+    [theme.breakpoints.up('sm')]: {
+      width: `calc(100% - ${drawerWidth}px)`,
+      marginLeft: drawerWidth,
+    },
+  },
+  menuButton: {
+    marginRight: theme.spacing(2),
+    [theme.breakpoints.up('sm')]: {
+      display: 'none',
+    },
+  },
+  toolbar: theme.mixins.toolbar,
+  drawerPaper: {
+    width: drawerWidth,
+  },
+  content: {
+    flexGrow: 1,
+    // padding: theme.spacing(3),
+
+    display: 'flex',
+    flexDirection: 'column',
   },
   messages: {
     flex: '1 1 auto',
@@ -57,9 +91,6 @@ const useStyles = makeStyles(theme => ({
 
     display: 'flex',
     flexDirection: 'column',
-  },
-  menuButton: {
-    marginRight: theme.spacing(2),
   },
   title: {
     flexGrow: 1,
@@ -98,9 +129,22 @@ const Message: React.FC<MessageProps> = ({ value }) => (
 );
 
 const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
-  const [roomId, setRoomId] = useState<string | undefined>(undefined);
+  const messagesRef = useRef<HTMLDivElement>(null);
 
   const [msg, setMsg] = useState('');
+
+  const [roomId, setRoomId] = useState<string | undefined>(undefined);
+
+  const singleRoomLog = useMemo(
+    () => roomLog.filter(log => log.room === roomId),
+    [roomLog, roomId],
+  );
+
+  useLayoutEffect(() => {
+    if (messagesRef.current) {
+      messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
+    }
+  }, [singleRoomLog]);
 
   useEffect(() => {
     if (roomId && !rooms[roomId]) {
@@ -127,6 +171,8 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
 
   const classes = useStyles();
 
+  const theme = useTheme();
+
   const [drawerOpened, setDrawerOpened] = useState(false);
 
   const handleDrawerClose = useCallback(() => {
@@ -142,12 +188,8 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setRoomId(e.currentTarget.dataset.id);
   }, []);
 
-  const singleRoomLog = useMemo(
-    () => roomLog.filter(log => log.room === roomId),
-    [roomLog, roomId],
-  );
-
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+
   const open = Boolean(anchorEl);
 
   const handleMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -198,16 +240,26 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setAnchorEl(null);
   }, [onLogOut]);
 
+  const drawer = (
+    <List dense>
+      {Object.keys(rooms).map(room => (
+        <ListItem key={room} button data-id={room} onClick={handleRoomClick}>
+          <ListItemText>{room}</ListItemText>
+        </ListItem>
+      ))}
+    </List>
+  );
+
   return (
     <div className={classes.root}>
       <CssBaseline />
-      <AppBar position="static">
+      <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
             edge="start"
             className={classes.menuButton}
             color="inherit"
-            aria-label="menu"
+            aria-label="open drawer"
             onClick={handleMenuButtonClick}
           >
             <MenuIcon />
@@ -247,58 +299,78 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
           </Menu>
         </Toolbar>
       </AppBar>
-      <Drawer open={drawerOpened} onClose={handleDrawerClose}>
-        <List dense>
-          {Object.keys(rooms).map(room => (
-            <ListItem
-              key={room}
-              button
-              data-id={room}
-              onClick={handleRoomClick}
-            >
-              <ListItemText>{room}</ListItemText>
-            </ListItem>
-          ))}
-        </List>
-      </Drawer>
-      <Box className={classes.messages}>
-        <Box marginTop="auto" marginBottom={1} p={1}>
-          <Grid item container direction="column" spacing={1}>
-            {singleRoomLog.map(roomEvent => (
-              <Fragment key={roomEvent.id}>
-                {roomEvent.type === 'join' ? (
-                  <Grid item>
-                    <b>{roomEvent.sender}</b> joined{' '}
-                    <small>{df.format(roomEvent.ts)}</small>
-                  </Grid>
-                ) : roomEvent.type === 'leave' ? (
-                  <Grid item>
-                    <b>{roomEvent.sender}</b> left{' '}
-                    <small>{df.format(roomEvent.ts)}</small>
-                  </Grid>
-                ) : roomEvent.type === 'message' ? (
-                  <Message value={roomEvent} />
-                ) : (
-                  <Grid item>{JSON.stringify(roomEvent)} </Grid>
-                )}
-              </Fragment>
-            ))}
-          </Grid>
+      <nav className={classes.drawer} aria-label="mailbox folders">
+        {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
+        <Hidden smUp implementation="css">
+          <Drawer
+            // container={container}
+            variant="temporary"
+            anchor={theme.direction === 'rtl' ? 'right' : 'left'}
+            open={drawerOpened}
+            onClose={handleDrawerClose}
+            classes={{
+              paper: classes.drawerPaper,
+            }}
+            ModalProps={{
+              keepMounted: true, // Better open performance on mobile.
+            }}
+          >
+            {drawer}
+          </Drawer>
+        </Hidden>
+        <Hidden xsDown implementation="css">
+          <Drawer
+            classes={{
+              paper: classes.drawerPaper,
+            }}
+            variant="permanent"
+            open
+          >
+            {drawer}
+          </Drawer>
+        </Hidden>
+      </nav>
+      <main className={classes.content}>
+        <div className={classes.toolbar} />
+        <div className={classes.messages} ref={messagesRef}>
+          <Box marginTop="auto" marginBottom={1} p={1}>
+            <Grid item container direction="column" spacing={1}>
+              {singleRoomLog.map(roomEvent => (
+                <Fragment key={roomEvent.id}>
+                  {roomEvent.type === 'join' ? (
+                    <Grid item>
+                      <b>{roomEvent.sender}</b> joined{' '}
+                      <small>{df.format(roomEvent.ts)}</small>
+                    </Grid>
+                  ) : roomEvent.type === 'leave' ? (
+                    <Grid item>
+                      <b>{roomEvent.sender}</b> left{' '}
+                      <small>{df.format(roomEvent.ts)}</small>
+                    </Grid>
+                  ) : roomEvent.type === 'message' ? (
+                    <Message value={roomEvent} />
+                  ) : (
+                    <Grid item>{JSON.stringify(roomEvent)} </Grid>
+                  )}
+                </Fragment>
+              ))}
+            </Grid>
+          </Box>
+        </div>
+        <Box p={1}>
+          <form noValidate autoComplete="off" onSubmit={handleSubmit}>
+            <TextField
+              fullWidth
+              label="Message"
+              variant="outlined"
+              value={msg}
+              onChange={handleMsgChange}
+              size="small"
+              // multiline
+            />
+          </form>
         </Box>
-      </Box>
-      <Box p={1}>
-        <form noValidate autoComplete="off" onSubmit={handleSubmit}>
-          <TextField
-            fullWidth
-            label="Message"
-            variant="outlined"
-            value={msg}
-            onChange={handleMsgChange}
-            size="small"
-            // multiline
-          />
-        </form>
-      </Box>
+      </main>
     </div>
   );
 };
