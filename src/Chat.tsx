@@ -33,6 +33,7 @@ import {
   Menu as MenuIcon,
   Settings as SettingsIcon,
   Group,
+  Person,
 } from '@material-ui/icons';
 import { DrawerContent } from './DrawerContent';
 
@@ -247,40 +248,51 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
           <Typography variant="h6" className={classes.title}>
             {roomId ? (
               <>
-                <Group fontSize="inherit" /> {roomId}
+                {roomId.startsWith('!') ? (
+                  <Person fontSize="inherit" />
+                ) : (
+                  <Group fontSize="inherit" />
+                )}{' '}
+                {roomId.startsWith('!')
+                  ? roomId.replace(`!${user}`, '').slice(1)
+                  : roomId}
               </>
             ) : (
               <i>No chat active</i>
             )}
           </Typography>
           {roomId && (
-            <IconButton
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleMenu}
-              color="inherit"
-            >
-              <SettingsIcon />
-            </IconButton>
+            <>
+              <IconButton
+                aria-label="account of current user"
+                aria-controls="menu-appbar"
+                aria-haspopup="true"
+                onClick={handleMenu}
+                color="inherit"
+              >
+                <SettingsIcon />
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorEl}
+                anchorOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: 'top',
+                  horizontal: 'right',
+                }}
+                open={open}
+                onClose={handleClose}
+              >
+                <MenuItem onClick={handleLeaveRoom}>
+                  {roomId.startsWith('!') ? 'Forget contact' : 'Leave room'}
+                </MenuItem>
+              </Menu>
+            </>
           )}
-          <Menu
-            id="menu-appbar"
-            anchorEl={anchorEl}
-            anchorOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            keepMounted
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'right',
-            }}
-            open={open}
-            onClose={handleClose}
-          >
-            <MenuItem onClick={handleLeaveRoom}>Leave room</MenuItem>
-          </Menu>
         </Toolbar>
       </AppBar>
       <nav className={classes.drawer} aria-label="mailbox folders">

@@ -85,7 +85,12 @@ export const JoinRoomDialog: React.FC<Props> = ({
           <Button type="button" autoFocus onClick={handleClose} color="primary">
             Cancel
           </Button>
-          <Button type="submit" color="primary" autoFocus>
+          <Button
+            type="submit"
+            color="primary"
+            autoFocus
+            // disabled={!room}
+          >
             Join
           </Button>
         </DialogActions>

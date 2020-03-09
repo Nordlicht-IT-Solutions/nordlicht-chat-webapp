@@ -147,8 +147,12 @@ export const DrawerContent: React.FC<Props> = ({
         client={client}
         open={showFindUserDialog}
         onClose={handleFindUserDialogClose}
-        knownUsers={[]} // TODO
-        self={user}
+        knownUsers={[
+          user,
+          ...joinedRooms
+            .filter(room => room.startsWith('!'))
+            .map(room => room.replace(`!${user}`, '').slice(1)),
+        ]}
       />
       <AppBar position="static">
         <Toolbar>
