@@ -16,6 +16,7 @@ type Props = {
   onClose: (user?: string) => void;
   client: Client;
   knownUsers: string[];
+  self: string;
 };
 
 export const FindUserDialog: React.FC<Props> = ({
@@ -23,6 +24,7 @@ export const FindUserDialog: React.FC<Props> = ({
   onClose,
   client,
   knownUsers,
+  self,
 }) => {
   const [user, setUser] = useState('');
 
@@ -33,12 +35,12 @@ export const FindUserDialog: React.FC<Props> = ({
       client.call('getUsers', []).then((users: string[]) => {
         const kus = new Set(knownUsers);
 
-        setUsers(users.filter(user => !kus.has(user)));
+        setUsers(users.filter(user => !kus.has(user) && user !== self));
       });
 
       setUser('');
     }
-  }, [client, open, knownUsers]);
+  }, [client, open, knownUsers, self]);
 
   const handleClose = useCallback(() => {
     onClose();

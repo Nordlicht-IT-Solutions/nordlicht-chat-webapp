@@ -33,7 +33,7 @@ export const JoinRoomDialog: React.FC<Props> = ({
       client.call('getRooms', []).then((rooms: string[]) => {
         const jrs = new Set(joinedRooms);
 
-        setRooms(rooms.filter(room => !jrs.has(room)));
+        setRooms(rooms.filter(room => !jrs.has(room) && !room.startsWith('!')));
       });
 
       setRoom('');

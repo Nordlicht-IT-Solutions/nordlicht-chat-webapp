@@ -12,7 +12,6 @@ type State = {
   authData: string | undefined;
   roomLog: RoomEvent[];
   rooms: Rooms;
-  contacts: Set<string>;
 };
 
 type InitAction = {
@@ -52,16 +51,6 @@ type UserLeftAction = {
   payload: { user: string; room: string };
 };
 
-type AddContactAction = {
-  type: 'addContact';
-  payload: string;
-};
-
-type RemoveContactAction = {
-  type: 'removeContact';
-  payload: string;
-};
-
 type Action =
   | InitAction
   | StartLoginAction
@@ -70,9 +59,7 @@ type Action =
   | SetAuthDataAction
   | AddRoomEventAction
   | UserJoinedAction
-  | UserLeftAction
-  | AddContactAction
-  | RemoveContactAction;
+  | UserLeftAction;
 
 const initialState: State = {
   loginInProgress: false,
@@ -80,7 +67,6 @@ const initialState: State = {
   authData: undefined,
   roomLog: [],
   rooms: {},
-  contacts: new Set(),
 };
 
 function reducer(state: State, action: Action) {
@@ -134,16 +120,6 @@ function reducer(state: State, action: Action) {
         if (item) {
           item.users.delete(action.payload.user);
         }
-        break;
-      }
-
-      case 'addContact': {
-        draft.contacts.add(action.payload);
-        break;
-      }
-
-      case 'removeContact': {
-        draft.contacts.delete(action.payload);
         break;
       }
 
@@ -224,10 +200,6 @@ const App: React.FC = () => {
           dispatch({ type: 'userLeft', payload: params });
         } else if (method === 'roomEvent') {
           dispatch({ type: 'addRoomEvent', payload: params });
-        } else if (method === 'addContact') {
-          dispatch({ type: 'addContact', payload: params[0] });
-        } else if (method === 'removeContact') {
-          dispatch({ type: 'removeContact', payload: params[0] });
         }
       } else if (id !== undefined && (error || result !== undefined)) {
         const { resolve, reject } = calls.get(id);
@@ -297,7 +269,6 @@ const App: React.FC = () => {
       onLogOut={handleLogOut}
       rooms={state.rooms}
       user={state.authData}
-      contacts={state.contacts}
     />
   ) : state.client ? (
     <Login onLogin={handleLogin} />

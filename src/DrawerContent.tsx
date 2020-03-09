@@ -31,7 +31,6 @@ type Props = {
   user: string;
   onLogOut: () => void;
   client: Client;
-  contacts: Set<string>;
 };
 
 const useStyles = makeStyles(theme => ({
@@ -44,7 +43,6 @@ export const DrawerContent: React.FC<Props> = ({
   onRoomSelect,
   user,
   onLogOut,
-  contacts,
   client,
 }) => {
   const handleClick: MouseEventHandler<HTMLElement> = useCallback(
@@ -110,18 +108,20 @@ export const DrawerContent: React.FC<Props> = ({
   }, []);
 
   const handleFindUserDialogClose = useCallback(
-    (user?: string) => {
+    (userToAdd?: string) => {
       setShowFindUserDialog(false);
 
-      if (!user) {
+      if (!userToAdd) {
         return;
       }
 
+      const room = `!${[userToAdd, user].sort().join('!')}`;
+
       client
-        .call('addContact', [user])
+        .call('joinRoom', [room])
         .then((res: any) => {
           console.info('ADD CONTACT', res);
-          // onRoomSelect(roomId);
+          onRoomSelect(room);
         })
         .catch((err: any) => {
           console.error('ADD CONTACT', err);
@@ -130,7 +130,7 @@ export const DrawerContent: React.FC<Props> = ({
           setAnchorEl(null);
         });
     },
-    [client],
+    [client, onRoomSelect, user],
   );
 
   const classes = useStyles();
@@ -148,6 +148,7 @@ export const DrawerContent: React.FC<Props> = ({
         open={showFindUserDialog}
         onClose={handleFindUserDialogClose}
         knownUsers={[]} // TODO
+        self={user}
       />
       <AppBar position="static">
         <Toolbar>
@@ -192,20 +193,22 @@ export const DrawerContent: React.FC<Props> = ({
           </ListSubheader>
         }
       >
-        {joinedRooms.map(room => (
-          <ListItem
-            key={room}
-            button
-            data-id={room}
-            onClick={handleClick}
-            selected={room === activeRoom}
-          >
-            <ListItemIcon>
-              <Group />
-            </ListItemIcon>
-            <ListItemText>{room}</ListItemText>
-          </ListItem>
-        ))}
+        {joinedRooms
+          .filter(room => !room.startsWith('!'))
+          .map(room => (
+            <ListItem
+              key={room}
+              button
+              data-id={room}
+              onClick={handleClick}
+              selected={room === activeRoom}
+            >
+              <ListItemIcon>
+                <Group />
+              </ListItemIcon>
+              <ListItemText>{room}</ListItemText>
+            </ListItem>
+          ))}
       </List>
       <Divider />
       <List
@@ -219,20 +222,26 @@ export const DrawerContent: React.FC<Props> = ({
           </ListSubheader>
         }
       >
-        {[...contacts].map(contact => (
-          <ListItem
-            key={contact}
-            button
-            data-id={contact}
-            // onClick={handleClick}
-            // selected={room === activeRoom}
-          >
-            <ListItemIcon>
-              <Person />
-            </ListItemIcon>
-            <ListItemText>{contact}</ListItemText>
-          </ListItem>
-        ))}
+        {joinedRooms
+          .filter(room => room.startsWith('!'))
+          .map(room => {
+            return (
+              <ListItem
+                key={room}
+                button
+                data-id={room}
+                onClick={handleClick}
+                selected={room === activeRoom}
+              >
+                <ListItemIcon>
+                  <Person />
+                </ListItemIcon>
+                <ListItemText>
+                  {room.replace(`!${user}`, '').slice(1)}
+                </ListItemText>
+              </ListItem>
+            );
+          })}
       </List>
     </div>
   );

@@ -104,7 +104,6 @@ type Props = {
   roomLog: RoomEvent[];
   rooms: Rooms;
   user: string;
-  contacts: Set<string>;
 };
 
 type MessageProps = {
@@ -129,14 +128,7 @@ const Message: React.FC<MessageProps> = ({ value }) => (
   </Grid>
 );
 
-const Chat: React.FC<Props> = ({
-  client,
-  onLogOut,
-  roomLog,
-  rooms,
-  user,
-  contacts,
-}) => {
+const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
   const messagesRef = useRef<HTMLDivElement>(null);
 
   const [msg, setMsg] = useState('');
@@ -168,8 +160,12 @@ const Chat: React.FC<Props> = ({
     (e: FormEvent) => {
       e.preventDefault();
 
-      if (msg) {
-        client.call('sendMessage', { to: 'room', room: roomId, message: msg });
+      if (msg && roomId) {
+        client.call('sendMessage', {
+          to: 'room',
+          room: roomId,
+          message: msg,
+        });
 
         setMsg('');
       }
@@ -231,7 +227,6 @@ const Chat: React.FC<Props> = ({
       user={user}
       onLogOut={onLogOut}
       client={client}
-      contacts={contacts}
     />
   );
 
