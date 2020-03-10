@@ -2,12 +2,16 @@ import { produce, enableMapSet } from 'immer';
 
 enableMapSet();
 
+export type ConnectionState = 'connecting' | 'connected' | 'closing' | 'closed';
+
 export type State = {
   loginInProgress: boolean;
   client: Client | undefined;
   authData: string | undefined;
   roomLog: RoomEvent[];
   rooms: Rooms;
+  connectionState: ConnectionState;
+  connectionReason: number | undefined;
 };
 
 export type InitAction = {
@@ -47,6 +51,11 @@ export type UserLeftAction = {
   payload: { user: string; room: string };
 };
 
+export type SetConnectionState = {
+  type: 'setConnectionState';
+  payload: { state: ConnectionState; code?: number };
+};
+
 export type Action =
   | InitAction
   | StartLoginAction
@@ -55,7 +64,8 @@ export type Action =
   | SetAuthDataAction
   | AddRoomEventAction
   | UserJoinedAction
-  | UserLeftAction;
+  | UserLeftAction
+  | SetConnectionState;
 
 export const initialState: State = {
   loginInProgress: false,
@@ -63,6 +73,8 @@ export const initialState: State = {
   authData: undefined,
   roomLog: [],
   rooms: {},
+  connectionState: 'closed',
+  connectionReason: undefined,
 };
 
 export function reducer(state: State, action: Action) {
@@ -116,8 +128,14 @@ export function reducer(state: State, action: Action) {
         if (item) {
           item.users.delete(action.payload.user);
         }
+
         break;
       }
+
+      case 'setConnectionState':
+        draft.connectionState = action.payload.state;
+        draft.connectionReason = action.payload.code;
+        break;
 
       default:
         throw Error('unknown action');

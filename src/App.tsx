@@ -3,7 +3,16 @@ import React, { useEffect, useCallback, useReducer } from 'react';
 import Chat from './Chat';
 import { Login } from './Login';
 import { red } from '@material-ui/core/colors';
-import { ThemeProvider, createMuiTheme } from '@material-ui/core';
+import {
+  ThemeProvider,
+  createMuiTheme,
+  Backdrop,
+  Paper,
+  Box,
+  makeStyles,
+  Theme,
+  createStyles,
+} from '@material-ui/core';
 import { reducer, initialState } from './reducer';
 
 const theme = createMuiTheme({
@@ -11,6 +20,15 @@ const theme = createMuiTheme({
     primary: red,
   },
 });
+
+const useStyles = makeStyles((theme: Theme) =>
+  createStyles({
+    backdrop: {
+      zIndex: theme.zIndex.drawer + 1,
+      color: '#fff',
+    },
+  }),
+);
 
 const App: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -20,9 +38,14 @@ const App: React.FC = () => {
       return;
     }
 
+    dispatch({ type: 'setConnectionState', payload: { state: 'connecting' } });
+
     const ws = new WebSocket('ws://localhost:8080');
 
-    const calls = new Map();
+    const calls = new Map<
+      number,
+      { resolve: (result: any) => void; reject: (err: any) => void }
+    >();
 
     let callId = 1;
 
@@ -47,6 +70,8 @@ const App: React.FC = () => {
 
     ws.addEventListener('open', () => {
       console.info('WS Open');
+
+      dispatch({ type: 'setConnectionState', payload: { state: 'connected' } });
 
       const user = window.localStorage.getItem('user');
 
@@ -85,14 +110,16 @@ const App: React.FC = () => {
           dispatch({ type: 'addRoomEvent', payload: params });
         }
       } else if (id !== undefined && (error || result !== undefined)) {
-        const { resolve, reject } = calls.get(id);
+        const call = calls.get(id);
 
-        calls.delete(id);
+        if (call) {
+          calls.delete(id);
 
-        if (error) {
-          reject(error);
-        } else {
-          resolve(result);
+          if (error) {
+            call.reject(error);
+          } else {
+            call.resolve(result);
+          }
         }
       }
     });
@@ -101,11 +128,34 @@ const App: React.FC = () => {
       console.error('WS Error', event);
     });
 
+    let timeoutRef: number | undefined;
+
     ws.addEventListener('close', event => {
       console.info('WS Close', event);
+
+      for (const call of calls.values()) {
+        call.reject(new Error('connection closed'));
+      }
+
+      dispatch({
+        type: 'setConnectionState',
+        payload: { state: 'closed', code: event.code },
+      });
+
+      if (event.code !== 1000 && event.code !== 1005) {
+        timeoutRef = window.setTimeout(() => {
+          timeoutRef = undefined;
+          dispatch({ type: 'init' });
+        }, 1000);
+      }
     });
 
     dispatch({ type: 'setClient', payload: { ws, call, eventTarget } });
+
+    return () => {
+      // ws.close(); // TODO
+      window.clearTimeout(timeoutRef);
+    };
   }, [state.client]);
 
   const handleLogin = useCallback(
@@ -130,24 +180,43 @@ const App: React.FC = () => {
   );
 
   const handleLogOut = useCallback(() => {
-    if (!state.client) {
-      return;
+    const client = state.client;
+
+    if (client) {
+      client.call('logout', []).then(() => {
+        dispatch({ type: 'setConnectionState', payload: { state: 'closing' } });
+
+        client?.ws.close();
+
+        window.localStorage.removeItem('user');
+
+        dispatch({ type: 'init' });
+      });
     }
-
-    state.client.call('logout', []).then(() => {
-      state.client?.ws.close();
-
-      window.localStorage.removeItem('user');
-
-      dispatch({ type: 'init' });
-    });
   }, [state.client]);
+
+  const connSpecial = ['connecting', 'closing', 'closed'].includes(
+    state.connectionState,
+  );
+
+  const special = connSpecial
+    ? stateMapping[state.connectionState]
+    : state.loginInProgress
+    ? 'Logging in...'
+    : !state.client
+    ? 'Loading...'
+    : null;
+
+  const classes = useStyles();
 
   return (
     <ThemeProvider theme={theme}>
-      {state.loginInProgress ? (
-        <div>Logging in...</div>
-      ) : state.client && state.authData ? (
+      <Backdrop open={!!special} className={classes.backdrop}>
+        <Paper elevation={2}>
+          <Box padding={2}>{special}</Box>
+        </Paper>
+      </Backdrop>
+      {connSpecial || !state.client ? null : state.authData ? (
         <Chat
           client={state.client}
           roomLog={state.roomLog}
@@ -155,13 +224,18 @@ const App: React.FC = () => {
           rooms={state.rooms}
           user={state.authData}
         />
-      ) : state.client ? (
-        <Login onLogin={handleLogin} />
       ) : (
-        <div>Loading...</div>
+        <Login onLogin={handleLogin} />
       )}
     </ThemeProvider>
   );
+};
+
+const stateMapping = {
+  closed: 'Reconnecting...',
+  connecting: 'Reconnecting...',
+  closing: 'Closing...',
+  connected: 'Connected.',
 };
 
 export default App;

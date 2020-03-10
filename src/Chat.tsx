@@ -352,20 +352,22 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
             </Grid>
           </Box>
         </div>
-        <Box p={1}>
-          <form noValidate autoComplete="off" onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="Message"
-              variant="outlined"
-              value={msg}
-              onChange={handleMsgChange}
-              size="small"
-              autoFocus
-              // multiline
-            />
-          </form>
-        </Box>
+        {roomId && (
+          <Box p={1}>
+            <form noValidate autoComplete="off" onSubmit={handleSubmit}>
+              <TextField
+                fullWidth
+                label="Message"
+                variant="outlined"
+                value={msg}
+                onChange={handleMsgChange}
+                size="small"
+                autoFocus
+                // multiline
+              />
+            </form>
+          </Box>
+        )}
       </main>
     </div>
   );
