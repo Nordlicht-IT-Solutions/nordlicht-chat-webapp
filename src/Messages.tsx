@@ -1,6 +1,12 @@
 import React, { Fragment, useRef, useLayoutEffect, useMemo } from 'react';
 
-import { Grid, Box, makeStyles, createStyles } from '@material-ui/core';
+import {
+  Grid,
+  Box,
+  makeStyles,
+  createStyles,
+  Typography,
+} from '@material-ui/core';
 
 import ChatInput from './ChatInput';
 
@@ -31,7 +37,13 @@ type Props = {
   selectedRoom: string | undefined;
 };
 
-const df = new Intl.DateTimeFormat('default', {
+const df1 = new Intl.DateTimeFormat('default', {
+  hour: 'numeric',
+  minute: 'numeric',
+  second: 'numeric',
+});
+
+const df2 = new Intl.DateTimeFormat('default', {
   year: 'numeric',
   month: 'numeric',
   day: 'numeric',
@@ -39,6 +51,22 @@ const df = new Intl.DateTimeFormat('default', {
   minute: 'numeric',
   second: 'numeric',
 });
+
+const EventTime: React.FC<{ roomEvent: RoomEvent }> = ({ roomEvent }) => {
+  const now = new Date();
+  const then = new Date(roomEvent.ts);
+
+  const isToday =
+    now.getDate() === then.getDate() &&
+    now.getMonth() === then.getMonth() &&
+    now.getFullYear() === then.getFullYear();
+
+  return (
+    <Typography variant="caption" color="textSecondary" display="inline">
+      <small>{(isToday ? df1 : df2).format(roomEvent.ts)}</small>
+    </Typography>
+  );
+};
 
 const Messages: React.FC<Props> = ({ client, roomEvents, selectedRoom }) => {
   const messagesRef = useRef<HTMLDivElement>(null);
@@ -57,19 +85,37 @@ const Messages: React.FC<Props> = ({ client, roomEvents, selectedRoom }) => {
         <Fragment key={roomEvent.id}>
           {roomEvent.type === 'join' ? (
             <Grid item>
-              <b>{roomEvent.sender}</b> joined{' '}
-              <small>{df.format(roomEvent.ts)}</small>
+              <Typography
+                color="textSecondary"
+                variant="body2"
+                display="inline"
+              >
+                <b>{roomEvent.sender}</b> joined{' '}
+              </Typography>
+              <EventTime roomEvent={roomEvent} />
             </Grid>
           ) : roomEvent.type === 'leave' ? (
             <Grid item>
-              <b>{roomEvent.sender}</b> left{' '}
-              <small>{df.format(roomEvent.ts)}</small>
+              <Typography
+                color="textSecondary"
+                variant="body2"
+                display="inline"
+              >
+                <b>{roomEvent.sender}</b> left{' '}
+                <EventTime roomEvent={roomEvent} />
+              </Typography>
             </Grid>
           ) : roomEvent.type === 'message' ? (
             <Grid item container direction="column">
               <Grid item>
-                <b>{roomEvent.sender}</b>{' '}
-                <small>{df.format(roomEvent.ts)}</small>
+                <Typography
+                  variant="subtitle2"
+                  color="textPrimary"
+                  display="inline"
+                >
+                  {roomEvent.sender}
+                </Typography>{' '}
+                <EventTime roomEvent={roomEvent} />
               </Grid>
               <Grid item>{roomEvent.message}</Grid>
             </Grid>
