@@ -6,10 +6,10 @@ import React, {
   ChangeEvent,
   FormEvent,
   Fragment,
-  useMemo,
   useEffect,
   useRef,
   useLayoutEffect,
+  useMemo,
 } from 'react';
 
 import {
@@ -102,9 +102,10 @@ const useStyles = makeStyles(theme => ({
 type Props = {
   client: Client;
   onLogOut: () => void;
-  roomLog: RoomEvent[];
   rooms: Rooms;
   user: string;
+  onRoomSelect: (roomName: string | undefined) => void;
+  selectedRoom: string | undefined;
 };
 
 type MessageProps = {
@@ -129,29 +130,32 @@ const Message: React.FC<MessageProps> = ({ value }) => (
   </Grid>
 );
 
-const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
+const Chat: React.FC<Props> = ({
+  client,
+  onLogOut,
+  rooms,
+  user,
+  selectedRoom,
+  onRoomSelect,
+}) => {
   const messagesRef = useRef<HTMLDivElement>(null);
 
   const [msg, setMsg] = useState('');
 
-  const [roomId, setRoomId] = useState<string | undefined>(undefined);
-
-  const singleRoomLog = useMemo(
-    () => roomLog.filter(log => log.room === roomId),
-    [roomLog, roomId],
-  );
+  const singleRoomLog = selectedRoom ? rooms[selectedRoom].events : undefined;
 
   useLayoutEffect(() => {
+    console.log('AAAAAA');
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
   }, [singleRoomLog]);
 
   useEffect(() => {
-    if (roomId && !rooms[roomId]) {
-      setRoomId(undefined);
+    if (selectedRoom && !rooms[selectedRoom]) {
+      onRoomSelect(undefined);
     }
-  }, [roomId, rooms]);
+  }, [onRoomSelect, selectedRoom, rooms]);
 
   const handleMsgChange = useCallback((e: ChangeEvent) => {
     setMsg((e.target as HTMLInputElement).value);
@@ -161,16 +165,16 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     (e: FormEvent) => {
       e.preventDefault();
 
-      if (msg && roomId) {
+      if (msg && selectedRoom) {
         client.call('sendMessage', {
-          room: roomId,
+          room: selectedRoom,
           message: msg,
         });
 
         setMsg('');
       }
     },
-    [msg, roomId, client],
+    [msg, selectedRoom, client],
   );
 
   const classes = useStyles();
@@ -187,10 +191,13 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setDrawerOpened(true);
   }, []);
 
-  const handleRoomSelect = useCallback(room => {
-    setDrawerOpened(false);
-    setRoomId(room);
-  }, []);
+  const handleRoomSelect = useCallback(
+    roomName => {
+      setDrawerOpened(false);
+      onRoomSelect(roomName);
+    },
+    [onRoomSelect],
+  );
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -204,30 +211,52 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
     setAnchorEl(null);
 
     client
-      .call('leaveRoom', [roomId])
+      .call('leaveRoom', [selectedRoom])
       .then((res: any) => {
         console.log('LEAVE ROOM', res);
       })
       .catch((err: any) => {
         console.log('LEAVE ROOM', err);
       });
-  }, [client, roomId]);
+  }, [client, selectedRoom]);
 
   const handleClose = useCallback(() => {
     setAnchorEl(null);
   }, []);
 
-  const joinedRooms = useMemo(() => Object.keys(rooms), [rooms]);
-
   const drawer = (
     <DrawerContent
-      activeRoom={roomId}
-      joinedRooms={joinedRooms}
+      activeRoom={selectedRoom}
+      rooms={rooms}
       onRoomSelect={handleRoomSelect}
       user={user}
       onLogOut={onLogOut}
       client={client}
     />
+  );
+
+  const messages = useMemo(
+    () =>
+      (singleRoomLog ?? []).map(roomEvent => (
+        <Fragment key={roomEvent.id}>
+          {roomEvent.type === 'join' ? (
+            <Grid item>
+              <b>{roomEvent.sender}</b> joined{' '}
+              <small>{df.format(roomEvent.ts)}</small>
+            </Grid>
+          ) : roomEvent.type === 'leave' ? (
+            <Grid item>
+              <b>{roomEvent.sender}</b> left{' '}
+              <small>{df.format(roomEvent.ts)}</small>
+            </Grid>
+          ) : roomEvent.type === 'message' ? (
+            <Message value={roomEvent} />
+          ) : (
+            <Grid item>{JSON.stringify(roomEvent)} </Grid>
+          )}
+        </Fragment>
+      )),
+    [singleRoomLog],
   );
 
   return (
@@ -245,22 +274,22 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" className={classes.title}>
-            {roomId ? (
+            {selectedRoom ? (
               <>
-                {roomId.startsWith('!') ? (
+                {selectedRoom.startsWith('!') ? (
                   <Person fontSize="inherit" />
                 ) : (
                   <Group fontSize="inherit" />
                 )}{' '}
-                {roomId.startsWith('!')
-                  ? roomId.replace(`!${user}`, '').slice(1)
-                  : roomId}
+                {selectedRoom.startsWith('!')
+                  ? selectedRoom.replace(`!${user}`, '').slice(1)
+                  : selectedRoom}
               </>
             ) : (
               <i>No chat active</i>
             )}
           </Typography>
-          {roomId && (
+          {selectedRoom && (
             <>
               <IconButton
                 aria-label="account of current user"
@@ -287,7 +316,9 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
                 onClose={handleClose}
               >
                 <MenuItem onClick={handleLeaveRoom}>
-                  {roomId.startsWith('!') ? 'Forget contact' : 'Leave room'}
+                  {selectedRoom.startsWith('!')
+                    ? 'Forget contact'
+                    : 'Leave room'}
                 </MenuItem>
               </Menu>
             </>
@@ -330,30 +361,12 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
         <div className={classes.messages} ref={messagesRef}>
           <Box marginTop="auto" marginBottom={1} p={1}>
             <Grid item container direction="column" spacing={1}>
-              {singleRoomLog.map(roomEvent => (
-                <Fragment key={roomEvent.id}>
-                  {roomEvent.type === 'join' ? (
-                    <Grid item>
-                      <b>{roomEvent.sender}</b> joined{' '}
-                      <small>{df.format(roomEvent.ts)}</small>
-                    </Grid>
-                  ) : roomEvent.type === 'leave' ? (
-                    <Grid item>
-                      <b>{roomEvent.sender}</b> left{' '}
-                      <small>{df.format(roomEvent.ts)}</small>
-                    </Grid>
-                  ) : roomEvent.type === 'message' ? (
-                    <Message value={roomEvent} />
-                  ) : (
-                    <Grid item>{JSON.stringify(roomEvent)} </Grid>
-                  )}
-                </Fragment>
-              ))}
+              {messages}
             </Grid>
           </Box>
         </div>
-        {roomId && (
-          <Box p={1}>
+        {selectedRoom && (
+          <Box p={1} paddingTop={0}>
             <form noValidate autoComplete="off" onSubmit={handleSubmit}>
               <TextField
                 fullWidth

@@ -32,4 +32,6 @@ type Room = {
   roomEvents: RoomEvent[];
 };
 
-type Rooms = { [key: string]: { users: Set<string> } };
+type Rooms = {
+  [key: string]: { users: Set<string>; events: RoomEvent[]; lastRead: number };
+};

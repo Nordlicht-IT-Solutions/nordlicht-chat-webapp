@@ -13,6 +13,8 @@ import {
   Divider,
   ListItemIcon,
   IconButton,
+  Chip,
+  ListItemSecondaryAction,
 } from '@material-ui/core';
 import {
   AccountCircle,
@@ -26,7 +28,7 @@ import { FindUserDialog } from './FindUserDialog';
 
 type Props = {
   activeRoom: string | undefined;
-  joinedRooms: string[];
+  rooms: Rooms;
   onRoomSelect: (room: string) => void;
   user: string;
   onLogOut: () => void;
@@ -39,13 +41,13 @@ const useStyles = makeStyles(theme => ({
 
 export const DrawerContent: React.FC<Props> = ({
   activeRoom,
-  joinedRooms,
+  rooms,
   onRoomSelect,
   user,
   onLogOut,
   client,
 }) => {
-  const handleClick: MouseEventHandler<HTMLElement> = useCallback(
+  const handleRoomClick: MouseEventHandler<HTMLElement> = useCallback(
     e => {
       onRoomSelect(e.currentTarget.dataset.id as string);
     },
@@ -141,7 +143,7 @@ export const DrawerContent: React.FC<Props> = ({
         client={client}
         open={showJoinRoomDialog}
         onClose={handleJoinRoomDialogClose}
-        joinedRooms={joinedRooms}
+        joinedRooms={Object.keys(rooms)}
       />
       <FindUserDialog
         client={client}
@@ -149,7 +151,7 @@ export const DrawerContent: React.FC<Props> = ({
         onClose={handleFindUserDialogClose}
         knownUsers={[
           user,
-          ...joinedRooms
+          ...Object.keys(rooms)
             .filter(room => room.startsWith('!'))
             .map(room => room.replace(`!${user}`, '').slice(1)),
         ]}
@@ -197,20 +199,23 @@ export const DrawerContent: React.FC<Props> = ({
           </ListSubheader>
         }
       >
-        {joinedRooms
-          .filter(room => !room.startsWith('!'))
-          .map(room => (
+        {Object.keys(rooms)
+          .filter(name => !name.startsWith('!'))
+          .map(name => (
             <ListItem
-              key={room}
+              key={name}
               button
-              data-id={room}
-              onClick={handleClick}
-              selected={room === activeRoom}
+              data-id={name}
+              onClick={handleRoomClick}
+              selected={name === activeRoom}
             >
               <ListItemIcon>
                 <Group />
               </ListItemIcon>
-              <ListItemText>{room}</ListItemText>
+              <ListItemText>{name}</ListItemText>
+              <ListItemSecondaryAction>
+                {getUnreadComponent(rooms, name)}
+              </ListItemSecondaryAction>
             </ListItem>
           ))}
       </List>
@@ -226,23 +231,26 @@ export const DrawerContent: React.FC<Props> = ({
           </ListSubheader>
         }
       >
-        {joinedRooms
-          .filter(room => room.startsWith('!'))
-          .map(room => {
+        {Object.keys(rooms)
+          .filter(name => name.startsWith('!'))
+          .map(name => {
             return (
               <ListItem
-                key={room}
+                key={name}
                 button
-                data-id={room}
-                onClick={handleClick}
-                selected={room === activeRoom}
+                data-id={name}
+                onClick={handleRoomClick}
+                selected={name === activeRoom}
               >
                 <ListItemIcon>
                   <Person />
                 </ListItemIcon>
                 <ListItemText>
-                  {room.replace(`!${user}`, '').slice(1)}
+                  {name.replace(`!${user}`, '').slice(1)}
                 </ListItemText>
+                <ListItemSecondaryAction>
+                  {getUnreadComponent(rooms, name)}
+                </ListItemSecondaryAction>
               </ListItem>
             );
           })}
@@ -250,3 +258,10 @@ export const DrawerContent: React.FC<Props> = ({
     </div>
   );
 };
+
+function getUnreadComponent(rooms: Rooms, name: string) {
+  const count = rooms[name].events.filter(evt => evt.ts > rooms[name].lastRead)
+    .length;
+
+  return count ? <Chip label={count} size="small" color="primary" /> : null;
+}

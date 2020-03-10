@@ -8,10 +8,10 @@ export type State = {
   loginInProgress: boolean;
   client: Client | undefined;
   authData: string | undefined;
-  roomLog: RoomEvent[];
   rooms: Rooms;
   connectionState: ConnectionState;
   connectionReason: number | undefined;
+  selectedRoom: string | undefined;
 };
 
 export type InitAction = {
@@ -43,7 +43,7 @@ export type AddRoomEventAction = {
 
 export type UserJoinedAction = {
   type: 'userJoined';
-  payload: { user: string; room: string };
+  payload: { user: string; room: string; lastRead: number };
 };
 
 export type UserLeftAction = {
@@ -56,6 +56,19 @@ export type SetConnectionState = {
   payload: { state: ConnectionState; code?: number };
 };
 
+export type SetLastRead = {
+  type: 'setLastRead';
+  payload: {
+    room: string;
+    lastRead: number;
+  };
+};
+
+export type SelectRoom = {
+  type: 'selectRoom';
+  payload: string | undefined;
+};
+
 export type Action =
   | InitAction
   | StartLoginAction
@@ -65,16 +78,18 @@ export type Action =
   | AddRoomEventAction
   | UserJoinedAction
   | UserLeftAction
-  | SetConnectionState;
+  | SetConnectionState
+  | SetLastRead
+  | SelectRoom;
 
 export const initialState: State = {
   loginInProgress: false,
   client: undefined,
   authData: undefined,
-  roomLog: [],
   rooms: {},
   connectionState: 'closed',
   connectionReason: undefined,
+  selectedRoom: undefined,
 };
 
 export function reducer(state: State, action: Action) {
@@ -101,18 +116,19 @@ export function reducer(state: State, action: Action) {
         break;
 
       case 'addRoomEvent':
-        draft.roomLog.push(action.payload);
+        draft.rooms[action.payload.room].events.push(action.payload);
         break;
 
       case 'userJoined': {
         let item = draft.rooms[action.payload.room];
 
         if (!item) {
-          item = { users: new Set() };
+          item = { users: new Set(), lastRead: 0, events: [] };
           draft.rooms[action.payload.room] = item;
         }
 
         item.users.add(action.payload.user);
+        item.lastRead = action.payload.lastRead;
 
         break;
       }
@@ -135,6 +151,14 @@ export function reducer(state: State, action: Action) {
       case 'setConnectionState':
         draft.connectionState = action.payload.state;
         draft.connectionReason = action.payload.code;
+        break;
+
+      case 'setLastRead':
+        draft.rooms[action.payload.room].lastRead = action.payload.lastRead;
+        break;
+
+      case 'selectRoom':
+        draft.selectedRoom = action.payload;
         break;
 
       default:

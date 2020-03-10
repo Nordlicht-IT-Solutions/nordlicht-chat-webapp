@@ -40,7 +40,13 @@ const App: React.FC = () => {
 
     dispatch({ type: 'setConnectionState', payload: { state: 'connecting' } });
 
-    const ws = new WebSocket('ws://localhost:8080');
+    const ws = new WebSocket(
+      `ws://${
+        window.location.port === '3000'
+          ? 'localhost:8080'
+          : window.location.host
+      }/chat`,
+    );
 
     const calls = new Map<
       number,
@@ -108,6 +114,8 @@ const App: React.FC = () => {
           dispatch({ type: 'userLeft', payload: params });
         } else if (method === 'roomEvent') {
           dispatch({ type: 'addRoomEvent', payload: params });
+        } else if (method === 'lastRead') {
+          dispatch({ type: 'setLastRead', payload: params });
         }
       } else if (id !== undefined && (error || result !== undefined)) {
         const call = calls.get(id);
@@ -157,6 +165,23 @@ const App: React.FC = () => {
       window.clearTimeout(timeoutRef);
     };
   }, [state.client]);
+
+  useEffect(() => {
+    if (state.client && state.selectedRoom) {
+      const room = state.rooms[state.selectedRoom];
+
+      if (room.events.length) {
+        const lastRead = room.events[room.events.length - 1].ts;
+
+        if (lastRead !== room.lastRead) {
+          state.client.call('setRoomLastRead', {
+            room: state.selectedRoom,
+            lastRead,
+          });
+        }
+      }
+    }
+  }, [state.client, state.selectedRoom, state.rooms]);
 
   const handleLogin = useCallback(
     (user: string, password: string) => {
@@ -209,6 +234,10 @@ const App: React.FC = () => {
 
   const classes = useStyles();
 
+  const handleRoomSelect = useCallback((room: string | undefined) => {
+    dispatch({ type: 'selectRoom', payload: room });
+  }, []);
+
   return (
     <ThemeProvider theme={theme}>
       <Backdrop open={!!special} className={classes.backdrop}>
@@ -219,10 +248,11 @@ const App: React.FC = () => {
       {connSpecial || !state.client ? null : state.authData ? (
         <Chat
           client={state.client}
-          roomLog={state.roomLog}
           onLogOut={handleLogOut}
           rooms={state.rooms}
           user={state.authData}
+          onRoomSelect={handleRoomSelect}
+          selectedRoom={state.selectedRoom}
         />
       ) : (
         <Login onLogin={handleLogin} />
