@@ -1,5 +1,3 @@
-import 'typeface-roboto';
-
 import React, { useState, useCallback, ChangeEvent, FormEvent } from 'react';
 
 import { TextField } from '@material-ui/core';

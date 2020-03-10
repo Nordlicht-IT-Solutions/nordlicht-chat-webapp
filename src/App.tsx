@@ -12,6 +12,7 @@ import {
   makeStyles,
   Theme,
   createStyles,
+  CssBaseline,
 } from '@material-ui/core';
 import { reducer, initialState } from './reducer';
 
@@ -23,6 +24,17 @@ const theme = createMuiTheme({
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
+    '@global': {
+      body: {
+        height: '100%',
+      },
+      html: {
+        height: '100%',
+      },
+      '#root': {
+        height: '100%',
+      },
+    },
     backdrop: {
       zIndex: theme.zIndex.drawer + 1,
       color: '#fff',
@@ -240,11 +252,14 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
+      <CssBaseline />
+
       <Backdrop open={!!special} className={classes.backdrop}>
         <Paper elevation={2}>
           <Box padding={2}>{special}</Box>
         </Paper>
       </Backdrop>
+
       {connSpecial || !state.client ? null : state.authData ? (
         <Chat
           client={state.client}

@@ -1,19 +1,12 @@
-import 'typeface-roboto';
-
 import React, {
   useState,
   useCallback,
-  Fragment,
   useEffect,
   useRef,
   useLayoutEffect,
-  useMemo,
 } from 'react';
 
 import {
-  Grid,
-  CssBaseline,
-  Box,
   Typography,
   AppBar,
   Toolbar,
@@ -32,8 +25,9 @@ import {
   Group,
   Person,
 } from '@material-ui/icons';
+
 import { DrawerContent } from './DrawerContent';
-import ChatInput from './ChatInput';
+import Messages from './Messages';
 
 const drawerWidth = 240;
 
@@ -72,29 +66,12 @@ const useStyles = makeStyles(theme => ({
       display: 'none',
     },
   },
-  toolbar: theme.mixins.toolbar,
   drawerPaper: {
     width: drawerWidth,
-  },
-  content: {
-    flexGrow: 1,
-    // padding: theme.spacing(3),
-
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  messages: {
-    flex: '1 1 auto',
-    overflowY: 'auto',
-    minHeight: 0,
-
-    display: 'flex',
-    flexDirection: 'column',
   },
   title: {
     flexGrow: 1,
   },
-  user: {},
 }));
 
 type Props = {
@@ -105,15 +82,6 @@ type Props = {
   onRoomSelect: (roomName: string | undefined) => void;
   selectedRoom: string | undefined;
 };
-
-const df = new Intl.DateTimeFormat('default', {
-  year: 'numeric',
-  month: 'numeric',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: 'numeric',
-  second: 'numeric',
-});
 
 const Chat: React.FC<Props> = ({
   client,
@@ -197,39 +165,8 @@ const Chat: React.FC<Props> = ({
     />
   );
 
-  const messages = useMemo(
-    () =>
-      (singleRoomLog ?? []).map(roomEvent => (
-        <Fragment key={roomEvent.id}>
-          {roomEvent.type === 'join' ? (
-            <Grid item>
-              <b>{roomEvent.sender}</b> joined{' '}
-              <small>{df.format(roomEvent.ts)}</small>
-            </Grid>
-          ) : roomEvent.type === 'leave' ? (
-            <Grid item>
-              <b>{roomEvent.sender}</b> left{' '}
-              <small>{df.format(roomEvent.ts)}</small>
-            </Grid>
-          ) : roomEvent.type === 'message' ? (
-            <Grid item container direction="column">
-              <Grid item>
-                <b>{roomEvent.sender}</b>{' '}
-                <small>{df.format(roomEvent.ts)}</small>
-              </Grid>
-              <Grid item>{roomEvent.message}</Grid>
-            </Grid>
-          ) : (
-            <Grid item>{JSON.stringify(roomEvent)} </Grid>
-          )}
-        </Fragment>
-      )),
-    [singleRoomLog],
-  );
-
   return (
     <div className={classes.root}>
-      <CssBaseline />
       <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
@@ -293,6 +230,7 @@ const Chat: React.FC<Props> = ({
           )}
         </Toolbar>
       </AppBar>
+
       <nav className={classes.drawer} aria-label="mailbox folders">
         {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
         <Hidden smUp implementation="css">
@@ -324,21 +262,14 @@ const Chat: React.FC<Props> = ({
           </Drawer>
         </Hidden>
       </nav>
-      <main className={classes.content}>
-        <div className={classes.toolbar} />
-        <div className={classes.messages} ref={messagesRef}>
-          <Box marginTop="auto" marginBottom={1} p={1}>
-            <Grid item container direction="column" spacing={1}>
-              {messages}
-            </Grid>
-          </Box>
-        </div>
-        {selectedRoom && (
-          <Box p={1} paddingTop={0}>
-            <ChatInput client={client} selectedRoom={selectedRoom} />
-          </Box>
-        )}
-      </main>
+
+      {selectedRoom && (
+        <Messages
+          client={client}
+          roomEvents={rooms[selectedRoom].events}
+          selectedRoom={selectedRoom}
+        />
+      )}
     </div>
   );
 };
