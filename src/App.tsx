@@ -182,7 +182,7 @@ const App: React.FC = () => {
     if (state.client && state.selectedRoom) {
       const room = state.rooms[state.selectedRoom];
 
-      if (room.events.length) {
+      if (room && room.events.length) {
         const lastRead = room.events[room.events.length - 1].ts;
 
         if (lastRead !== room.lastRead) {

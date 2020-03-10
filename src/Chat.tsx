@@ -17,6 +17,14 @@ import {
   MenuItem,
   Hidden,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  List,
+  ListItem,
+  ListItemText,
 } from '@material-ui/core';
 
 import {
@@ -24,6 +32,8 @@ import {
   Settings as SettingsIcon,
   Group,
   Person,
+  PersonAdd,
+  Chat as ChatIcon,
 } from '@material-ui/icons';
 
 import { DrawerContent } from './DrawerContent';
@@ -93,7 +103,9 @@ const Chat: React.FC<Props> = ({
 }) => {
   const messagesRef = useRef<HTMLDivElement>(null);
 
-  const singleRoomLog = selectedRoom ? rooms[selectedRoom].events : undefined;
+  const singleRoomLog = selectedRoom
+    ? rooms[selectedRoom]?.events ?? undefined
+    : undefined;
 
   useLayoutEffect(() => {
     if (messagesRef.current) {
@@ -154,6 +166,17 @@ const Chat: React.FC<Props> = ({
     setAnchorEl(null);
   }, []);
 
+  const [showRoomMembers, setShowRoomMembers] = useState(false);
+
+  const handleShowRoomMembers = useCallback(() => {
+    setAnchorEl(null);
+    setShowRoomMembers(true);
+  }, []);
+
+  const handleShowRoomMembersDialogClose = useCallback(() => {
+    setShowRoomMembers(false);
+  }, []);
+
   const drawer = (
     <DrawerContent
       activeRoom={selectedRoom}
@@ -165,8 +188,71 @@ const Chat: React.FC<Props> = ({
     />
   );
 
+  const handleAddClick = useCallback(
+    (userName: string) => {
+      const room = `!${[userName, user].sort().join('!')}`;
+
+      client
+        .call('joinRoom', [room])
+        .then((res: any) => {
+          console.info('ADD CONTACT', res);
+          onRoomSelect(room);
+        })
+        .catch((err: any) => {
+          console.error('ADD CONTACT', err);
+        })
+        .then(() => {
+          setShowRoomMembers(false);
+        });
+    },
+    [client, onRoomSelect, user],
+  );
+
   return (
     <div className={classes.root}>
+      <Dialog open={showRoomMembers} onClose={handleShowRoomMembersDialogClose}>
+        <DialogTitle>Room members</DialogTitle>
+        <DialogContent>
+          {selectedRoom && (
+            <List dense>
+              {[...(rooms[selectedRoom]?.users ?? [])].map(u => (
+                <ListItem key={u}>
+                  <ListItemText>{u}</ListItemText>
+                  {u === user ? null : Object.keys(rooms).some(
+                      roomName =>
+                        roomName[0] === '!' && roomName.split('!').includes(u),
+                    ) ? (
+                    <IconButton
+                      edge="end"
+                      onClick={() => {
+                        setShowRoomMembers(false);
+                        onRoomSelect(`!${[u, user].join('!')}`);
+                      }}
+                    >
+                      <ChatIcon />
+                    </IconButton>
+                  ) : (
+                    <IconButton edge="end" onClick={() => handleAddClick(u)}>
+                      <PersonAdd />
+                    </IconButton>
+                  )}
+                </ListItem>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            type="button"
+            autoFocus
+            onClick={handleShowRoomMembersDialogClose}
+            color="primary"
+          >
+            Close
+          </Button>
+        </DialogActions>{' '}
+      </Dialog>
+
       <AppBar position="fixed" className={classes.appBar}>
         <Toolbar>
           <IconButton
@@ -225,6 +311,11 @@ const Chat: React.FC<Props> = ({
                     ? 'Forget contact'
                     : 'Leave room'}
                 </MenuItem>
+                {!selectedRoom.startsWith('!') && (
+                  <MenuItem onClick={handleShowRoomMembers}>
+                    Show room members
+                  </MenuItem>
+                )}
               </Menu>
             </>
           )}
@@ -266,7 +357,7 @@ const Chat: React.FC<Props> = ({
       {selectedRoom && (
         <Messages
           client={client}
-          roomEvents={rooms[selectedRoom].events}
+          roomEvents={rooms[selectedRoom]?.events ?? []}
           selectedRoom={selectedRoom}
         />
       )}
