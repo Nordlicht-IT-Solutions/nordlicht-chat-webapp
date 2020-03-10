@@ -204,6 +204,7 @@ export const DrawerContent: React.FC<Props> = ({
       >
         {Object.keys(rooms)
           .filter(name => !name.startsWith('!'))
+          .sort()
           .map(name => (
             <ListItem
               key={name}
@@ -236,6 +237,7 @@ export const DrawerContent: React.FC<Props> = ({
       >
         {Object.keys(rooms)
           .filter(name => name.startsWith('!'))
+          .sort()
           .map(name => {
             return (
               <ListItem

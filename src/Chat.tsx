@@ -215,7 +215,7 @@ const Chat: React.FC<Props> = ({
         <DialogContent>
           {selectedRoom && (
             <List dense>
-              {[...(rooms[selectedRoom]?.users ?? [])].map(u => (
+              {[...(rooms[selectedRoom]?.users ?? [])].sort().map(u => (
                 <ListItem key={u}>
                   <ListItemText>{u}</ListItemText>
                   {u === user ? null : Object.keys(rooms).some(

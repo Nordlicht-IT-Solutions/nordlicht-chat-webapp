@@ -34,7 +34,7 @@ export const FindUserDialog: React.FC<Props> = ({
       client.call('getUsers', []).then((users: string[]) => {
         const kus = new Set(knownUsers);
 
-        setUsers(users.filter(user => !kus.has(user)));
+        setUsers(users.filter(user => !kus.has(user)).sort());
       });
 
       setUser('');
