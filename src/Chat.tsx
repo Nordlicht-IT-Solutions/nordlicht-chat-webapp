@@ -3,8 +3,6 @@ import 'typeface-roboto';
 import React, {
   useState,
   useCallback,
-  ChangeEvent,
-  FormEvent,
   Fragment,
   useEffect,
   useRef,
@@ -14,7 +12,6 @@ import React, {
 
 import {
   Grid,
-  TextField,
   CssBaseline,
   Box,
   Typography,
@@ -36,6 +33,7 @@ import {
   Person,
 } from '@material-ui/icons';
 import { DrawerContent } from './DrawerContent';
+import ChatInput from './ChatInput';
 
 const drawerWidth = 240;
 
@@ -108,10 +106,6 @@ type Props = {
   selectedRoom: string | undefined;
 };
 
-type MessageProps = {
-  value: MessageRoomEvent;
-};
-
 const df = new Intl.DateTimeFormat('default', {
   year: 'numeric',
   month: 'numeric',
@@ -120,15 +114,6 @@ const df = new Intl.DateTimeFormat('default', {
   minute: 'numeric',
   second: 'numeric',
 });
-
-const Message: React.FC<MessageProps> = ({ value }) => (
-  <Grid item container direction="column">
-    <Grid item>
-      <b>{value.sender}</b> <small>{df.format(value.ts)}</small>
-    </Grid>
-    <Grid item>{value.message}</Grid>
-  </Grid>
-);
 
 const Chat: React.FC<Props> = ({
   client,
@@ -140,12 +125,9 @@ const Chat: React.FC<Props> = ({
 }) => {
   const messagesRef = useRef<HTMLDivElement>(null);
 
-  const [msg, setMsg] = useState('');
-
   const singleRoomLog = selectedRoom ? rooms[selectedRoom].events : undefined;
 
   useLayoutEffect(() => {
-    console.log('AAAAAA');
     if (messagesRef.current) {
       messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
     }
@@ -156,26 +138,6 @@ const Chat: React.FC<Props> = ({
       onRoomSelect(undefined);
     }
   }, [onRoomSelect, selectedRoom, rooms]);
-
-  const handleMsgChange = useCallback((e: ChangeEvent) => {
-    setMsg((e.target as HTMLInputElement).value);
-  }, []);
-
-  const handleSubmit = useCallback(
-    (e: FormEvent) => {
-      e.preventDefault();
-
-      if (msg && selectedRoom) {
-        client.call('sendMessage', {
-          room: selectedRoom,
-          message: msg,
-        });
-
-        setMsg('');
-      }
-    },
-    [msg, selectedRoom, client],
-  );
 
   const classes = useStyles();
 
@@ -250,7 +212,13 @@ const Chat: React.FC<Props> = ({
               <small>{df.format(roomEvent.ts)}</small>
             </Grid>
           ) : roomEvent.type === 'message' ? (
-            <Message value={roomEvent} />
+            <Grid item container direction="column">
+              <Grid item>
+                <b>{roomEvent.sender}</b>{' '}
+                <small>{df.format(roomEvent.ts)}</small>
+              </Grid>
+              <Grid item>{roomEvent.message}</Grid>
+            </Grid>
           ) : (
             <Grid item>{JSON.stringify(roomEvent)} </Grid>
           )}
@@ -367,18 +335,7 @@ const Chat: React.FC<Props> = ({
         </div>
         {selectedRoom && (
           <Box p={1} paddingTop={0}>
-            <form noValidate autoComplete="off" onSubmit={handleSubmit}>
-              <TextField
-                fullWidth
-                label="Message"
-                variant="outlined"
-                value={msg}
-                onChange={handleMsgChange}
-                size="small"
-                autoFocus
-                // multiline
-              />
-            </form>
+            <ChatInput client={client} selectedRoom={selectedRoom} />
           </Box>
         )}
       </main>
