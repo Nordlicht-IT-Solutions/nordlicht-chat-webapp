@@ -1,7 +1,6 @@
 interface Client {
   ws: WebSocket;
   call: (method: string, params: object | any[]) => Promise<any>;
-  eventTarget: EventTarget;
 }
 
 interface BaseRoomEvent {

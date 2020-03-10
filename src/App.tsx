@@ -3,6 +3,7 @@ import React, { useEffect, useCallback, useReducer } from 'react';
 import Chat from './Chat';
 import { Login } from './Login';
 import { red } from '@material-ui/core/colors';
+
 import {
   ThemeProvider,
   createMuiTheme,
@@ -14,6 +15,7 @@ import {
   createStyles,
   CssBaseline,
 } from '@material-ui/core';
+
 import { reducer, initialState } from './reducer';
 
 const theme = createMuiTheme({
@@ -67,8 +69,6 @@ const App: React.FC = () => {
 
     let callId = 1;
 
-    const eventTarget = new EventTarget();
-
     function call(method: string, params: object | any[]) {
       return new Promise((resolve, reject) => {
         ws.send(
@@ -116,8 +116,6 @@ const App: React.FC = () => {
       }
 
       if (method && params) {
-        eventTarget.dispatchEvent(new CustomEvent('method', params));
-
         console.log('METHOD', method, params);
 
         if (method === 'joinRoom') {
@@ -170,7 +168,7 @@ const App: React.FC = () => {
       }
     });
 
-    dispatch({ type: 'setClient', payload: { ws, call, eventTarget } });
+    dispatch({ type: 'setClient', payload: { ws, call } });
 
     return () => {
       // ws.close(); // TODO
