@@ -53,7 +53,7 @@ const App: React.FC = () => {
     dispatch({ type: 'setConnectionState', payload: { state: 'connecting' } });
 
     const ws = new WebSocket(
-      `ws://${
+      `${window.location.protocol.replace('http', 'ws')}//${
         window.location.port === '3000'
           ? 'localhost:8080'
           : window.location.host
