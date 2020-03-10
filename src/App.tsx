@@ -3,6 +3,8 @@ import React, { useEffect, useCallback, useReducer } from 'react';
 import { produce, enableMapSet } from 'immer';
 import Chat from './Chat';
 import { Login } from './Login';
+import { red } from '@material-ui/core/colors';
+import { ThemeProvider, createMuiTheme } from '@material-ui/core';
 
 enableMapSet();
 
@@ -128,6 +130,12 @@ function reducer(state: State, action: Action) {
     }
   });
 }
+
+const theme = createMuiTheme({
+  palette: {
+    primary: red,
+  },
+});
 
 const App: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -260,19 +268,25 @@ const App: React.FC = () => {
     });
   }, [state.client]);
 
-  return state.loginInProgress ? (
-    <div>Logging in...</div>
-  ) : state.client && state.authData ? (
-    <Chat
-      client={state.client}
-      roomLog={state.roomLog}
-      onLogOut={handleLogOut}
-      rooms={state.rooms}
-      user={state.authData}
-    />
-  ) : state.client ? (
-    <Login onLogin={handleLogin} />
-  ) : null;
+  return (
+    <ThemeProvider theme={theme}>
+      {state.loginInProgress ? (
+        <div>Logging in...</div>
+      ) : state.client && state.authData ? (
+        <Chat
+          client={state.client}
+          roomLog={state.roomLog}
+          onLogOut={handleLogOut}
+          rooms={state.rooms}
+          user={state.authData}
+        />
+      ) : state.client ? (
+        <Login onLogin={handleLogin} />
+      ) : (
+        <div>Loading...</div>
+      )}
+    </ThemeProvider>
+  );
 };
 
 export default App;

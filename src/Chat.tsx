@@ -163,7 +163,6 @@ const Chat: React.FC<Props> = ({ client, onLogOut, roomLog, rooms, user }) => {
 
       if (msg && roomId) {
         client.call('sendMessage', {
-          to: 'room',
           room: roomId,
           message: msg,
         });
