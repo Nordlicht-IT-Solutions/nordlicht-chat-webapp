@@ -43,15 +43,15 @@ const drawerWidth = 240;
 
 const useStyles = makeStyles(theme => ({
   '@global': {
-    body: {
-      height: '100%',
-    },
-    html: {
-      height: '100%',
-    },
-    '#root': {
-      height: '100%',
-    },
+    // body: {
+    //   height: '100%',
+    // },
+    // html: {
+    //   height: '100%',
+    // },
+    // '#root': {
+    //   height: '100%',
+    // },
   },
   root: {
     display: 'flex',
@@ -78,6 +78,7 @@ const useStyles = makeStyles(theme => ({
   },
   drawerPaper: {
     width: drawerWidth,
+    position: 'absolute',
   },
   title: {
     flexGrow: 1,
@@ -253,7 +254,7 @@ const Chat: React.FC<Props> = ({
         </DialogActions>{' '}
       </Dialog>
 
-      <AppBar position="fixed" className={classes.appBar}>
+      <AppBar position="absolute" className={classes.appBar}>
         <Toolbar>
           <IconButton
             edge="start"
@@ -326,7 +327,6 @@ const Chat: React.FC<Props> = ({
         {/* The implementation can be swapped with js to avoid SEO duplication of links. */}
         <Hidden smUp implementation="css">
           <Drawer
-            // container={container}
             variant="temporary"
             anchor={theme.direction === 'rtl' ? 'right' : 'left'}
             open={drawerOpened}

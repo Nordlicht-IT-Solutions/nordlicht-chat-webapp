@@ -26,17 +26,6 @@ const theme = createMuiTheme({
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
-    '@global': {
-      body: {
-        height: '100%',
-      },
-      html: {
-        height: '100%',
-      },
-      '#root': {
-        height: '100%',
-      },
-    },
     backdrop: {
       zIndex: theme.zIndex.drawer + 1,
       color: '#fff',
@@ -44,7 +33,7 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-const App: React.FC = () => {
+export const App: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
@@ -56,7 +45,7 @@ const App: React.FC = () => {
 
     const ws = new WebSocket(
       `${window.location.protocol.replace('http', 'ws')}//${
-        window.location.port === '3000'
+        window.location.port === '3000' || window.location.port === '6060'
           ? 'localhost:8080'
           : window.location.host
       }/chat`,
@@ -280,5 +269,3 @@ const stateMapping = {
   closing: 'Closing...',
   connected: 'Connected.',
 };
-
-export default App;

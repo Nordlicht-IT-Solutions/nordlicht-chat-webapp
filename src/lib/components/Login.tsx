@@ -1,19 +1,21 @@
 import React, { useCallback, useState, FormEvent, ChangeEvent } from 'react';
 import {
   Container,
-  CssBaseline,
   makeStyles,
   Avatar,
   TextField,
   Typography,
-  FormControlLabel,
-  Checkbox,
+  // FormControlLabel,
+  // Checkbox,
   Button,
-  Box,
+  // Box,
   Grid,
   Link,
 } from '@material-ui/core';
-import { LockOutlined, Copyright } from '@material-ui/icons';
+import {
+  LockOutlined,
+  // Copyright,
+} from '@material-ui/icons';
 
 type Props = {
   onLogin: (login: string, password: string) => void;
@@ -70,7 +72,6 @@ export const Login: React.FC<Props> = ({ onLogin }) => {
 
   return (
     <Container component="main" maxWidth="xs">
-      <CssBaseline />
       <div className={classes.paper}>
         <Avatar className={classes.avatar}>
           <LockOutlined />
