@@ -1,5 +1,3 @@
-import { App } from './components/App';
+import { ChatApp } from './components/ChatApp';
 
-export {
-  App,
-};
+export default ChatApp;

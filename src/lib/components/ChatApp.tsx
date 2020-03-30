@@ -33,12 +33,12 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-export const App: React.FC = () => {
+export const ChatApp: React.FC = () => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
     if (state.client !== undefined) {
-      return;
+      return undefined;
     }
 
     dispatch({ type: 'setConnectionState', payload: { state: 'connecting' } });

@@ -1,9 +1,9 @@
 import React from 'react';
-import { App as MyApp } from '../lib';
+import ChatApp from '../lib';
 
 const App = () => (
   <div style={{ position: 'relative', height: 800 }}>
-    <MyApp />
+    <ChatApp />
   </div>
 );
 
