@@ -1,3 +1,1 @@
-import { ChatApp } from './components/ChatApp';
-
-export default ChatApp;
+export { ChatApp, createJss } from './components/ChatApp';

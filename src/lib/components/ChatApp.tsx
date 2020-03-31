@@ -3,6 +3,7 @@ import React, { useEffect, useCallback, useReducer } from 'react';
 import Chat from './Chat';
 import { Login } from './Login';
 import { red } from '@material-ui/core/colors';
+import { create, Jss, InsertionPoint } from 'jss';
 
 import {
   ThemeProvider,
@@ -14,6 +15,8 @@ import {
   Theme,
   createStyles,
   CssBaseline,
+  StylesProvider,
+  jssPreset,
 } from '@material-ui/core';
 
 import { reducer, initialState } from './reducer';
@@ -33,7 +36,14 @@ const useStyles = makeStyles((theme: Theme) =>
   }),
 );
 
-export const ChatApp: React.FC = () => {
+export function createJss(insertionPoint: InsertionPoint) {
+  return create({
+    ...jssPreset(),
+    insertionPoint,
+  });
+}
+
+export const ChatApp: React.FC<{ jss?: Jss }> = ({ jss }) => {
   const [state, dispatch] = useReducer(reducer, initialState);
 
   useEffect(() => {
@@ -238,28 +248,30 @@ export const ChatApp: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <StylesProvider jss={jss}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
 
-      <Backdrop open={!!special} className={classes.backdrop}>
-        <Paper elevation={2}>
-          <Box padding={2}>{special}</Box>
-        </Paper>
-      </Backdrop>
+        <Backdrop open={!!special} className={classes.backdrop}>
+          <Paper elevation={2}>
+            <Box padding={2}>{special}</Box>
+          </Paper>
+        </Backdrop>
 
-      {connSpecial || !state.client ? null : state.authData ? (
-        <Chat
-          client={state.client}
-          onLogOut={handleLogOut}
-          rooms={state.rooms}
-          user={state.authData}
-          onRoomSelect={handleRoomSelect}
-          selectedRoom={state.selectedRoom}
-        />
-      ) : (
-        <Login onLogin={handleLogin} />
-      )}
-    </ThemeProvider>
+        {connSpecial || !state.client ? null : state.authData ? (
+          <Chat
+            client={state.client}
+            onLogOut={handleLogOut}
+            rooms={state.rooms}
+            user={state.authData}
+            onRoomSelect={handleRoomSelect}
+            selectedRoom={state.selectedRoom}
+          />
+        ) : (
+          <Login onLogin={handleLogin} />
+        )}
+      </ThemeProvider>
+    </StylesProvider>
   );
 };
 

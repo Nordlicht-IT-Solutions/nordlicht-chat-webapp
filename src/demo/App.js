@@ -1,5 +1,5 @@
 import React from 'react';
-import ChatApp from '../lib';
+import { ChatApp } from '../lib';
 
 const App = () => (
   <div style={{ position: 'relative', height: 800 }}>
